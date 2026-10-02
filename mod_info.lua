@@ -1,5 +1,5 @@
 name = "MHotkeys"
-version = 1.0
+version = 2
 copyright = "CC BY-NC-SA"
 description = "Random hotkeys (currently adds a hotkey to filter to highest tech/faction engineer in selection)"
 author = "maudlin27"
@@ -9,7 +9,7 @@ icon = ""
 identifier = ""
 selectable = true
 exclusive = false
-ui_only = false
+ui_only = true
 requires = { }
 requiresNames = { }
 conflicts = { }
