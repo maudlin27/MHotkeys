@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="29deb791-f14e-4b55-9764-f7c552567e38" name="Changes" comment="" />
+    <list default="true" id="29deb791-f14e-4b55-9764-f7c552567e38" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/mod_info.lua" beforeDir="false" afterPath="$PROJECT_DIR$/mod_info.lua" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -24,7 +26,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "git-widget-placeholder": "main",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "/home/maudlin27/My Games/Gas Powered Games/Supreme Commander Forged Alliance/mods/MHotkeys"
+    "last_opened_file_path": "/home/maudlin27/My Games/Gas Powered Games/Supreme Commander Forged Alliance/FAFDev"
   }
 }]]></component>
   <component name="SharedIndexes">
