@@ -1,0 +1,17 @@
+name = "MHotkeys"
+version = 1.0
+copyright = "CC BY-NC-SA"
+description = "Random hotkeys"
+author = "maudlin27"
+uid = "faf01h34-43j1-a5cd-ef-qwerty987654"
+url = ""
+icon = ""
+identifier = ""
+selectable = true
+exclusive = false
+ui_only = false
+requires = { }
+requiresNames = { }
+conflicts = { }
+before = { }
+after = { }
