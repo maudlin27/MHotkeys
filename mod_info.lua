@@ -1,9 +1,9 @@
 name = "MHotkeys"
-version = 2
-copyright = "CC BY-NC-SA"
-description = "Random hotkeys (currently adds a hotkey to filter to highest tech/faction engineer in selection)"
+version = 3
+copyright = "CC BY-NC-SA 4.0"
+description = "Random hotkeys (filter to highest tech/faction engineer in selection and air related)"
 author = "maudlin27"
-uid = "fafuih34-43j1-a5cd-ef-qwerty987654"
+uid = "mhotkeys-v003-a5cd-ef-qwerty987654"
 url = ""
 icon = ""
 identifier = ""
