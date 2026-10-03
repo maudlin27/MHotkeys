@@ -33,55 +33,64 @@ local GetFactions = import('/lua/factions.lua').GetFactions
 --- Equivalent to {categories.UEF, categories.CYBRAN, categories.AEON, categories.SERAPHIM} for the base game.
 function GetFactionCategories()
 --Copy from FAF, refer to above copyright notice
-    local factionCategories = {}
+    local tcFactionCategories = {}
 
     for _, faction in GetFactions() do
-        table.insert(factionCategories, categories[faction['Category']])
+        table.insert(tcFactionCategories, categories[faction['Category']])
     end
 
-    return factionCategories
+    return tcFactionCategories
 end
 
-function GetMajorityFaction(units)
+function GetMajorityFaction(toUnits)
     --Copy from FAF, refer to above copyright notice
-    local majorityFactionUnits = {}
-    local majorityFactionUnitCount = 0
+    local toMajorityFactionUnits = {}
+    local iMajorityFactionUnitCount = 0
 
-    for _, factionCategory in GetFactionCategories() do
-        local factionUnits = EntityCategoryFilterDown(factionCategory, units)
-        local factionUnitCount = table.getn(factionUnits)
-        if factionUnitCount > majorityFactionUnitCount then
-            majorityFactionUnits = factionUnits
-            majorityFactionUnitCount = factionUnitCount
+    for _, cFactionCategory in GetFactionCategories() do
+        local toFactionUnits = EntityCategoryFilterDown(cFactionCategory, toUnits)
+        local iFactionUnitCount = table.getn(toFactionUnits)
+        if iFactionUnitCount > iMajorityFactionUnitCount then
+            toMajorityFactionUnits = toUnits
+            iMajorityFactionUnitCount = iFactionUnitCount
         end
     end
 
-    return majorityFactionUnits
+    return toMajorityFactionUnits
 end
 
 function FilterHighestTechEngineers()
     --As a starting point, FAF's SelectHighestEngineerAndAssist hotkey was referred to, refer to above copyright notice
-    local selection = GetSelectedUnits()
+    local toSelection = GetSelectedUnits()
 
-    if selection then
-        local tech3EngineersAndSACUs = EntityCategoryFilterDown(CategoriesTech3EngineersAndSACUs, selection)
-        local tech2Engineers = EntityCategoryFilterDown(CategoriesTech2Engineers, selection)
-        local fieldEngineers = EntityCategoryFilterDown(CategoriesFieldEngineers, selection)
-        local tech1Engineers = EntityCategoryFilterDown(CategoriesTech1Engineers, selection)
+    if toSelection then
+        local toT3EngineersAndSACUs = EntityCategoryFilterDown(CategoriesTech3EngineersAndSACUs, toSelection)
+        local toT2Engineers = EntityCategoryFilterDown(CategoriesTech2Engineers, toSelection)
+        local toSparkies = EntityCategoryFilterDown(CategoriesFieldEngineers, toSelection)
+        local toT1Engineers = EntityCategoryFilterDown(CategoriesTech1Engineers, toSelection)
 
-        local highestTechEngiesAndSacusOfMajorityFaction
-        if not table.empty(tech3EngineersAndSACUs) then
-            highestTechEngiesAndSacusOfMajorityFaction = GetMajorityFaction(tech3EngineersAndSACUs)
-        elseif not table.empty(tech2Engineers) then
-            highestTechEngiesAndSacusOfMajorityFaction = GetMajorityFaction(tech2Engineers)
-        elseif not table.empty(fieldEngineers) then
-            highestTechEngiesAndSacusOfMajorityFaction = GetMajorityFaction(fieldEngineers)
-        elseif not table.empty(tech1Engineers) then
-            highestTechEngiesAndSacusOfMajorityFaction = GetMajorityFaction(tech1Engineers)
+        local toHighestTechEngiesOfMajorityFaction
+        if not table.empty(toT3EngineersAndSACUs) then
+            toHighestTechEngiesOfMajorityFaction = GetMajorityFaction(toT3EngineersAndSACUs)
+        elseif not table.empty(toT2Engineers) then
+            toHighestTechEngiesOfMajorityFaction = GetMajorityFaction(toT2Engineers)
+        elseif not table.empty(toSparkies) then
+            toHighestTechEngiesOfMajorityFaction = GetMajorityFaction(toSparkies)
+        elseif not table.empty(toT1Engineers) then
+            toHighestTechEngiesOfMajorityFaction = GetMajorityFaction(toT1Engineers)
         end
 
-        if highestTechEngiesAndSacusOfMajorityFaction then
-            SelectUnits(highestTechEngiesAndSacusOfMajorityFaction)
+        if toHighestTechEngiesOfMajorityFaction then
+            SelectUnits(toHighestTechEngiesOfMajorityFaction)
         end
+    end
+end
+
+
+function FilterLowestHealth()
+    local toSelection = GetSelectedUnits()
+
+    if toSelection then
+        LOG('Missing code')
     end
 end
