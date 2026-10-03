@@ -1,7 +1,7 @@
 name = "MHotkeys"
 version = 2
 copyright = "CC BY-NC-SA 4.0"
-description = "Random hotkeys (currently adds a hotkey to filter to highest tech/faction engineer in selection)"
+description = "Random hotkeys (filter to highest tech/faction engineer in selection and air related)"
 author = "maudlin27"
 uid = "mhotkeys-v002-a5cd-ef-qwerty987654"
 url = ""

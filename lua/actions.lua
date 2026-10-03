@@ -91,6 +91,25 @@ function FilterLowestHealth()
     local toSelection = GetSelectedUnits()
 
     if toSelection then
-        LOG('Missing code')
+        local oLowestHealthUnit
+        local iLowestHealthPercent = 1.0
+        local iCurHealthPercent
+        for iUnit, oUnit in toSelection do
+            iCurHealthPercent = oUnit:GetHealth() / oUnit:GetMaxHealth()
+            if oUnit.GetFuelRatio and oUnit:GetFuelRatio() < 0.4 then
+                if oUnit:GetFuelRatio() < 0.25 then
+                    iCurHealthPercent = iCurHealthPercent - math.min(iCurHealthPercent * 0.5, 0.25 * (1 - oUnit:GetFuelRatio()))
+                else
+                    iCurHealthPercent = iCurHealthPercent - math.min(iCurHealthPercent * 0.5, 0.05 * (1 - oUnit:GetFuelRatio()))
+                end
+            end
+            if iCurHealthPercent < iLowestHealthPercent then
+                iLowestHealthPercent = iCurHealthPercent
+                oLowestHealthUnit = oUnit
+            end
+        end
+        if oLowestHealthUnit then
+            SelectUnits({oLowestHealthUnit})
+        end
     end
 end
