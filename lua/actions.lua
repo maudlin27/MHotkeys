@@ -140,6 +140,34 @@ function SendSelectionToRefuel()
     end
 end
 
+function RemoveUnitsFromControlGroups(toUnitsToRemove)
+    local bChangedGroup
+    for iCurControlGroup = 1, 9, 1 do
+        local sGroupName = tostring(iCurControlGroup)
+        ConExecute('UI_ApplySelectionSet '..sGroupName)
+        local toCurControlGroup = GetSelectedUnits()
+        if toCurControlGroup then
+            bChangedGroup = false
+            for iCurGroupUnit = table.getn(toCurControlGroup), 1, -1 do
+
+                local oGroupUnit = toCurControlGroup[iCurGroupUnit]
+                for iUnit, oUnit in toUnitsToRemove do
+                    if oUnit == oGroupUnit then
+                        table.remove(toCurControlGroup, iCurGroupUnit)
+                        oGroupUnit:RemoveSelectionSet(sGroupName)
+                        bChangedGroup = true
+                        break
+                    end
+                end
+            end
+            if bChangedGroup then
+                SelectUnits(toCurControlGroup)
+                ConExecute('UI_MakeSelectionSet '..sGroupName)
+            end
+        end
+    end
+end
+
 function SendSelectionToRefuelAndRemoveFromControlGroups()
     local toSelection = GetSelectedUnits()
     if toSelection then
@@ -152,6 +180,8 @@ function SendSelectionToRefuelAndRemoveFromControlGroups()
             if not(table.empty(toAirStaging)) then
                 SelectUnits(toUnitsToRefuel)
                 IssueDockCommand(true)
+                --Remove from control groups
+                RemoveUnitsFromControlGroups(toUnitsToRefuel)
             else
                 --Not able to give a move order via UI mod as far as can tell, so dont do anything
             end
