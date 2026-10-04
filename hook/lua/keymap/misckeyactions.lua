@@ -9,3 +9,6 @@ KeyMapper.SetUserKeyAction('mh_lowesthealth', {action = "UI_Lua import('/mods/MH
 
 KeyDescriptions['mh_refuel'] = 'Send selected unit to refuel at air staging'
 KeyMapper.SetUserKeyAction('mh_refuel', {action = "UI_Lua import('/mods/MHotkeys/lua/actions.lua').SendSelectionToRefuel()", category = 'orders',})
+
+KeyDescriptions['mh_refuelcg'] = 'Send selected unit to refuel at air staging and remove from control groups'
+KeyMapper.SetUserKeyAction('mh_refuelcg', {action = "UI_Lua import('/mods/MHotkeys/lua/actions.lua').SendSelectionToRefuelAndRemoveFromControlGroups()", category = 'orders',})

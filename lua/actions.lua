@@ -23,6 +23,7 @@
 
 --Non-FAF:
 local SmartSelection = import("/lua/keymap/smartselection.lua")
+local Support = import("/mods/MHotkeys/lua/support.lua")
 
 --Copy from FAF, refer to above copyright notice:
 local SelectUnits = SelectUnits
@@ -117,7 +118,7 @@ function FilterLowestHealth()
     end
 end
 
-function SendUnitsToRefuelAtAirStaging(toUnitsToRefuel, oAirStaging)
+function SendUnitsToRefuelAtAirStaging(toUnitsToRefuel)
     SelectUnits(toUnitsToRefuel)
     IssueDockCommand(true)
 end
@@ -129,11 +130,30 @@ function SendSelectionToRefuel()
         if not(table.empty(toUnitsToRefuel)) then
             SmartSelection.smartSelect("AIRSTAGINGPLATFORM STRUCTURE")
             local toAirStaging = GetSelectedUnits()
+            if not(table.empty(toAirStaging)) then
+                SendUnitsToRefuelAtAirStaging(toUnitsToRefuel)
+            else
+                --Not able to give a move order via UI mod as far as can tell, so dont do anything
+            end
+            SelectUnits(toSelection)
+        end
+    end
+end
+
+function SendSelectionToRefuelAndRemoveFromControlGroups()
+    local toSelection = GetSelectedUnits()
+    if toSelection then
+        local toUnitsToRefuel = EntityCategoryFilterDown(categories.ALLUNITS - categories.CANNOTUSEAIRSTAGING - categories.EXPERIMENTAL, toSelection)
+        if not(table.empty(toUnitsToRefuel)) then
+            SmartSelection.smartSelect("AIRSTAGINGPLATFORM STRUCTURE")
+            local toAirStaging = GetSelectedUnits()
             --Select original units again
             SelectUnits(toSelection)
             if not(table.empty(toAirStaging)) then
                 SelectUnits(toUnitsToRefuel)
                 IssueDockCommand(true)
+            else
+                --Not able to give a move order via UI mod as far as can tell, so dont do anything
             end
             SelectUnits(toSelection)
         end
