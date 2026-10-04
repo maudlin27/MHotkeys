@@ -21,6 +21,9 @@
 --** SOFTWARE.
 --******************************************************************************************************
 
+--Non-FAF:
+local SmartSelection = import("/lua/keymap/smartselection.lua")
+
 --Copy from FAF, refer to above copyright notice:
 local SelectUnits = SelectUnits
 local CategoriesTech3EngineersAndSACUs = (categories.ENGINEER * categories.TECH3 + categories.SUBCOMMANDER) - (categories.FIELDENGINEER + categories.COMMAND)
@@ -110,6 +113,29 @@ function FilterLowestHealth()
         end
         if oLowestHealthUnit then
             SelectUnits({oLowestHealthUnit})
+        end
+    end
+end
+
+function SendUnitsToRefuelAtAirStaging(toUnitsToRefuel, oAirStaging)
+    SelectUnits(toUnitsToRefuel)
+    IssueDockCommand(true)
+end
+
+function SendSelectionToRefuel()
+    local toSelection = GetSelectedUnits()
+    if toSelection then
+        local toUnitsToRefuel = EntityCategoryFilterDown(categories.ALLUNITS - categories.CANNOTUSEAIRSTAGING - categories.EXPERIMENTAL, toSelection)
+        if not(table.empty(toUnitsToRefuel)) then
+            SmartSelection.smartSelect("AIRSTAGINGPLATFORM STRUCTURE")
+            local toAirStaging = GetSelectedUnits()
+            --Select original units again
+            SelectUnits(toSelection)
+            if not(table.empty(toAirStaging)) then
+                SelectUnits(toUnitsToRefuel)
+                IssueDockCommand(true)
+            end
+            SelectUnits(toSelection)
         end
     end
 end
