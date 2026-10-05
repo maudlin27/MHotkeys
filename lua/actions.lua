@@ -23,6 +23,8 @@
 
 --Non-FAF:
 local SmartSelection = import("/lua/keymap/smartselection.lua")
+local Support = import("/mods/MHotkeys/lua/support.lua")
+local iHighHealthThreshold = 0.8
 
 --Copy from FAF, refer to above copyright notice:
 local SelectUnits = SelectUnits
@@ -90,12 +92,12 @@ function FilterHighestTechEngineers()
 end
 
 
-function FilterLowestHealth()
+function FilterLowestHealthSingleUnit()
     local toSelection = GetSelectedUnits()
 
     if toSelection then
         local oLowestHealthUnit
-        local iLowestHealthPercent = 1.0
+        local iLowestHealthPercent = iHighHealthThreshold --Dont select units with more than this % of health
         local iCurHealthPercent
         for iUnit, oUnit in toSelection do
             iCurHealthPercent = oUnit:GetHealth() / oUnit:GetMaxHealth()
@@ -109,6 +111,9 @@ function FilterLowestHealth()
             if iCurHealthPercent < iLowestHealthPercent then
                 iLowestHealthPercent = iCurHealthPercent
                 oLowestHealthUnit = oUnit
+            elseif not(oLowestHealthUnit) and oUnit.GetFuelRatio and oUnit:GetFuelRatio() < 0.15 then
+                iLowestHealthPercent = iCurHealthPercent
+                oLowestHealthUnit = oUnit
             end
         end
         if oLowestHealthUnit then
@@ -117,7 +122,59 @@ function FilterLowestHealth()
     end
 end
 
-function SendUnitsToRefuelAtAirStaging(toUnitsToRefuel, oAirStaging)
+function FilterLowestHealthUnits()
+--Selects all units that are low health or low fuel; if none are, selects the unit with the lowest health/fuel
+    local toSelection = GetSelectedUnits()
+
+    if toSelection then
+        local oLowestHealthUnit
+        local iLowestHealthPercent = iHighHealthThreshold --Dont select units with more than this % of health
+        local iCurHealthPercent
+        local iLowHealthThreshold = 0.3
+        local iLowFuelThreshold = 0.15
+        local toLowHealthUnits = {}
+        for iUnit, oUnit in toSelection do
+            iCurHealthPercent = oUnit:GetHealth() / oUnit:GetMaxHealth()
+            if oUnit.GetFuelRatio and oUnit:GetFuelRatio() < 0.4 then
+                if oUnit:GetFuelRatio() < 0.25 then
+                    iCurHealthPercent = iCurHealthPercent - math.min(iCurHealthPercent * 0.5, 0.25 * (1 - oUnit:GetFuelRatio()))
+                else
+                    iCurHealthPercent = iCurHealthPercent - math.min(iCurHealthPercent * 0.5, 0.05 * (1 - oUnit:GetFuelRatio()))
+                end
+            end
+            if iCurHealthPercent < iLowestHealthPercent then
+                iLowestHealthPercent = iCurHealthPercent
+                oLowestHealthUnit = oUnit
+            end
+            if iCurHealthPercent <= iLowHealthThreshold then
+                table.insert(toLowHealthUnits, oUnit)
+            elseif oUnit.GetFuelRatio and oUnit:GetFuelRatio() <= iLowFuelThreshold then
+                table.insert(toLowHealthUnits, oUnit)
+            end
+        end
+        if iLowestHealthPercent > iLowHealthThreshold then
+            if oLowestHealthUnit then
+                local bAddToTable = true
+                if not(table.empty(toLowHealthUnits)) then
+                    for iUnit, oUnit in toLowHealthUnits do
+                        if oUnit == oLowestHealthUnit then
+                            bAddToTable = false
+                            break
+                        end
+                    end
+                end
+                if bAddToTable then
+                    table.insert(toLowHealthUnits, oLowestHealthUnit)
+                end
+            end
+        end
+        if not(table.empty(toLowHealthUnits)) then
+            SelectUnits(toLowHealthUnits)
+        end
+    end
+end
+
+function SendUnitsToRefuelAtAirStaging(toUnitsToRefuel)
     SelectUnits(toUnitsToRefuel)
     IssueDockCommand(true)
 end
@@ -129,13 +186,135 @@ function SendSelectionToRefuel()
         if not(table.empty(toUnitsToRefuel)) then
             SmartSelection.smartSelect("AIRSTAGINGPLATFORM STRUCTURE")
             local toAirStaging = GetSelectedUnits()
+            if not(table.empty(toAirStaging)) then
+                SendUnitsToRefuelAtAirStaging(toUnitsToRefuel)
+            else
+                --Not able to give a move order via UI mod as far as can tell, so dont do anything
+            end
+            SelectUnits(toSelection)
+        end
+    end
+end
+
+function RemoveUnitsFromControlGroups(toUnitsToRemove)
+    local bChangedGroup
+    for iCurControlGroup = 1, 9, 1 do
+        local sGroupName = tostring(iCurControlGroup)
+        ConExecute('UI_ApplySelectionSet '..sGroupName)
+        local toCurControlGroup = GetSelectedUnits()
+        if toCurControlGroup then
+            bChangedGroup = false
+            for iCurGroupUnit = table.getn(toCurControlGroup), 1, -1 do
+
+                local oGroupUnit = toCurControlGroup[iCurGroupUnit]
+                for iUnit, oUnit in toUnitsToRemove do
+                    if oUnit == oGroupUnit then
+                        table.remove(toCurControlGroup, iCurGroupUnit)
+                        oGroupUnit:RemoveSelectionSet(sGroupName)
+                        bChangedGroup = true
+                        break
+                    end
+                end
+            end
+            if bChangedGroup then
+                SelectUnits(toCurControlGroup)
+                ConExecute('UI_MakeSelectionSet '..sGroupName)
+            end
+        end
+    end
+end
+
+function SendSelectionToRefuelAndRemoveFromControlGroups()
+    local toSelection = GetSelectedUnits()
+    if toSelection then
+        local toUnitsToRefuel = EntityCategoryFilterDown(categories.ALLUNITS - categories.CANNOTUSEAIRSTAGING - categories.EXPERIMENTAL, toSelection)
+        if not(table.empty(toUnitsToRefuel)) then
+            SmartSelection.smartSelect("AIRSTAGINGPLATFORM STRUCTURE")
+            local toAirStaging = GetSelectedUnits()
             --Select original units again
             SelectUnits(toSelection)
             if not(table.empty(toAirStaging)) then
                 SelectUnits(toUnitsToRefuel)
                 IssueDockCommand(true)
+                --Remove from control groups
+                RemoveUnitsFromControlGroups(toUnitsToRefuel)
+            else
+                --Not able to give a move order via UI mod as far as can tell, so dont do anything
             end
             SelectUnits(toSelection)
         end
+    end
+end
+
+function IsAirUnitAvailable(oUnit)
+    local bDebugMessages = false
+    local sFunctionRef = 'IsAirUnitAvailable'
+
+    if bDebugMessages == true then LOG(sFunctionRef..': oUnit UnitId='..oUnit:GetUnitId()) end
+    if EntityCategoryContains(categories.CANNOTUSEAIRSTAGING + categories.EXPERIMENTAL, oUnit:GetUnitId()) then
+        if bDebugMessages == true then LOG(sFunctionRef..': Unit cant use air staging') end
+        return true
+    else
+        --Cant reference IsUnitState with UI mod
+        if oUnit:IsIdle() then
+            if bDebugMessages == true then LOG(sFunctionRef..': IsIdle() is true') end
+            return true
+        elseif oUnit:GetHealth() / oUnit:GetMaxHealth() > iHighHealthThreshold and not(oUnit.GetFuelRatio and oUnit:GetFuelRatio() < 0.25) then
+            return true
+
+        else
+            if oUnit.GetCommandQueue then
+                local tCommandQueue = oUnit:GetCommandQueue()
+                if not(table.empty(tCommandQueue)) then
+                    local tLastCommand = tCommandQueue[table.getn(tCommandQueue)]
+                    if bDebugMessages == true then LOG(sFunctionRef..': tCommandQueue size='..table.getn(tCommandQueue)..'; tLastCommand='..repru(tLastCommand)..'; tLastCommand.type='..(tLastCommand.type or 'nil')) end
+                    if tLastCommand.type == 'Dock' or tLastCommand.type == 'TransportLoadUnits' then
+                        return false
+                    end
+                else
+                    if bDebugMessages == true then LOG(sFunctionRef..': Command queue is empty') end
+                end
+            else
+                if bDebugMessages == true then LOG(sFunctionRef..': Unit doesnt have GetCommandQueue') end
+            end
+            local oFocusUnit
+            if oUnit.GetFocus then oFocusUnit = oUnit:GetFocus() end
+            if oFocusUnit.GetUnitId then
+                if bDebugMessages == true then LOG(sFunctionRef..': FocusUnit Id='..oFocusUnit:GetUnitId()) end
+                if EntityCategoryContains(categories.AIRSTAGINGPLATFORM, oFocusUnit:GetUnitId()) then
+                    return false
+                end
+            end
+        end
+    end
+    return true
+end
+
+function SelectAvailableGunships()
+    --SmartSelection.smartSelect("AIR GROUNDATTACK")
+    ConExecute('UI_SelectByCategory AIR GROUNDATTACK')
+    local toGunships = GetSelectedUnits()
+    if not(table.empty(toGunships)) then
+        local oCurGunship
+        for iCurGunship = table.getn(toGunships), 1, -1 do
+            if not(IsAirUnitAvailable(toGunships[iCurGunship])) then
+                table.remove(toGunships, iCurGunship)
+            end
+        end
+        SelectUnits(toGunships)
+    end
+end
+
+function SelectAvailableAirAA()
+    SmartSelection.smartSelect("AIR HIGHALTAIR ANTIAIR -BOMBER -EXPERIMENTAL")
+    local toAirAA = GetSelectedUnits()
+    if not(table.empty(toAirAA)) then
+        local oCurAir
+        for iCurAir = table.getn(toAirAA), 1, -1 do
+            if not(IsAirUnitAvailable(toAirAA[iCurAir])) then
+                table.remove(toAirAA, iCurAir)
+            end
+        end
+        SelectUnits(toAirAA)
     end
 end
