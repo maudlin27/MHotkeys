@@ -91,7 +91,7 @@ function FilterHighestTechEngineers()
 end
 
 
-function FilterLowestHealth()
+function FilterLowestHealthSingleUnit()
     local toSelection = GetSelectedUnits()
 
     if toSelection then
@@ -114,6 +114,58 @@ function FilterLowestHealth()
         end
         if oLowestHealthUnit then
             SelectUnits({oLowestHealthUnit})
+        end
+    end
+end
+
+function FilterLowestHealthUnits()
+--Selects all units that are low health or low fuel; if none are, selects the unit with the lowest health/fuel
+    local toSelection = GetSelectedUnits()
+
+    if toSelection then
+        local oLowestHealthUnit
+        local iLowestHealthPercent = 1.0
+        local iCurHealthPercent
+        local iLowHealthThreshold = 0.3
+        local iLowFuelThreshold = 0.15
+        local toLowHealthUnits = {}
+        for iUnit, oUnit in toSelection do
+            iCurHealthPercent = oUnit:GetHealth() / oUnit:GetMaxHealth()
+            if oUnit.GetFuelRatio and oUnit:GetFuelRatio() < 0.4 then
+                if oUnit:GetFuelRatio() < 0.25 then
+                    iCurHealthPercent = iCurHealthPercent - math.min(iCurHealthPercent * 0.5, 0.25 * (1 - oUnit:GetFuelRatio()))
+                else
+                    iCurHealthPercent = iCurHealthPercent - math.min(iCurHealthPercent * 0.5, 0.05 * (1 - oUnit:GetFuelRatio()))
+                end
+            end
+            if iCurHealthPercent < iLowestHealthPercent then
+                iLowestHealthPercent = iCurHealthPercent
+                oLowestHealthUnit = oUnit
+            end
+            if iCurHealthPercent <= iLowHealthThreshold then
+                table.insert(toLowHealthUnits, oUnit)
+            elseif oUnit.GetFuelRatio and oUnit:GetFuelRatio() < iLowFuelThreshold then
+                table.insert(toLowHealthUnits, oUnit)
+            end
+        end
+        if iLowestHealthPercent > iLowHealthThreshold then
+            if oLowestHealthUnit then
+                local bAddToTable = true
+                if not(table.empty(toLowHealthUnits)) then
+                    for iUnit, oUnit in toLowHealthUnits do
+                        if oUnit == oLowestHealthUnit then
+                            bAddToTable = false
+                            break
+                        end
+                    end
+                end
+                if bAddToTable then
+                    table.insert(toLowHealthUnits, oLowestHealthUnit)
+                end
+            end
+        end
+        if not(table.empty(toLowHealthUnits)) then
+            SelectUnits(toLowHealthUnits)
         end
     end
 end
