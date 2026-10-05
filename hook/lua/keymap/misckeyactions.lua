@@ -15,3 +15,9 @@ KeyMapper.SetUserKeyAction('mh_refuel', {action = "UI_Lua import('/mods/MHotkeys
 
 KeyDescriptions['mh_refuelcg'] = 'Send selected unit to refuel at air staging and remove from control groups'
 KeyMapper.SetUserKeyAction('mh_refuelcg', {action = "UI_Lua import('/mods/MHotkeys/lua/actions.lua').SendSelectionToRefuelAndRemoveFromControlGroups()", category = 'orders',})
+
+KeyDescriptions['mh_gunships'] = 'Select all non-refueling gunships'
+KeyMapper.SetUserKeyAction('mh_gunships', {action = "UI_Lua import('/mods/MHotkeys/lua/actions.lua').SelectAvailableGunships()", category = 'selection',})
+
+KeyDescriptions['mh_airaa'] = 'Select all non-refueling fighters'
+KeyMapper.SetUserKeyAction('mh_airaa', {action = "UI_Lua import('/mods/MHotkeys/lua/actions.lua').SelectAvailableAirAA()", category = 'selection',})

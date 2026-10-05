@@ -24,6 +24,7 @@
 --Non-FAF:
 local SmartSelection = import("/lua/keymap/smartselection.lua")
 local Support = import("/mods/MHotkeys/lua/support.lua")
+local iHighHealthThreshold = 0.8
 
 --Copy from FAF, refer to above copyright notice:
 local SelectUnits = SelectUnits
@@ -96,7 +97,7 @@ function FilterLowestHealthSingleUnit()
 
     if toSelection then
         local oLowestHealthUnit
-        local iLowestHealthPercent = 1.0
+        local iLowestHealthPercent = iHighHealthThreshold --Dont select units with more than this % of health
         local iCurHealthPercent
         for iUnit, oUnit in toSelection do
             iCurHealthPercent = oUnit:GetHealth() / oUnit:GetMaxHealth()
@@ -108,6 +109,9 @@ function FilterLowestHealthSingleUnit()
                 end
             end
             if iCurHealthPercent < iLowestHealthPercent then
+                iLowestHealthPercent = iCurHealthPercent
+                oLowestHealthUnit = oUnit
+            elseif not(oLowestHealthUnit) and oUnit.GetFuelRatio and oUnit:GetFuelRatio() < 0.15 then
                 iLowestHealthPercent = iCurHealthPercent
                 oLowestHealthUnit = oUnit
             end
@@ -124,7 +128,7 @@ function FilterLowestHealthUnits()
 
     if toSelection then
         local oLowestHealthUnit
-        local iLowestHealthPercent = 1.0
+        local iLowestHealthPercent = iHighHealthThreshold --Dont select units with more than this % of health
         local iCurHealthPercent
         local iLowHealthThreshold = 0.3
         local iLowFuelThreshold = 0.15
@@ -144,7 +148,7 @@ function FilterLowestHealthUnits()
             end
             if iCurHealthPercent <= iLowHealthThreshold then
                 table.insert(toLowHealthUnits, oUnit)
-            elseif oUnit.GetFuelRatio and oUnit:GetFuelRatio() < iLowFuelThreshold then
+            elseif oUnit.GetFuelRatio and oUnit:GetFuelRatio() <= iLowFuelThreshold then
                 table.insert(toLowHealthUnits, oUnit)
             end
         end
@@ -239,5 +243,78 @@ function SendSelectionToRefuelAndRemoveFromControlGroups()
             end
             SelectUnits(toSelection)
         end
+    end
+end
+
+function IsAirUnitAvailable(oUnit)
+    local bDebugMessages = false
+    local sFunctionRef = 'IsAirUnitAvailable'
+
+    if bDebugMessages == true then LOG(sFunctionRef..': oUnit UnitId='..oUnit:GetUnitId()) end
+    if EntityCategoryContains(categories.CANNOTUSEAIRSTAGING + categories.EXPERIMENTAL, oUnit:GetUnitId()) then
+        if bDebugMessages == true then LOG(sFunctionRef..': Unit cant use air staging') end
+        return true
+    else
+        --Cant reference IsUnitState with UI mod
+        if oUnit:IsIdle() then
+            if bDebugMessages == true then LOG(sFunctionRef..': IsIdle() is true') end
+            return true
+        elseif oUnit:GetHealth() / oUnit:GetMaxHealth() > iHighHealthThreshold and not(oUnit.GetFuelRatio and oUnit:GetFuelRatio() < 0.25) then
+            return true
+
+        else
+            if oUnit.GetCommandQueue then
+                local tCommandQueue = oUnit:GetCommandQueue()
+                if not(table.empty(tCommandQueue)) then
+                    local tLastCommand = tCommandQueue[table.getn(tCommandQueue)]
+                    if bDebugMessages == true then LOG(sFunctionRef..': tCommandQueue size='..table.getn(tCommandQueue)..'; tLastCommand='..repru(tLastCommand)..'; tLastCommand.type='..(tLastCommand.type or 'nil')) end
+                    if tLastCommand.type == 'Dock' or tLastCommand.type == 'TransportLoadUnits' then
+                        return false
+                    end
+                else
+                    if bDebugMessages == true then LOG(sFunctionRef..': Command queue is empty') end
+                end
+            else
+                if bDebugMessages == true then LOG(sFunctionRef..': Unit doesnt have GetCommandQueue') end
+            end
+            local oFocusUnit
+            if oUnit.GetFocus then oFocusUnit = oUnit:GetFocus() end
+            if oFocusUnit.GetUnitId then
+                if bDebugMessages == true then LOG(sFunctionRef..': FocusUnit Id='..oFocusUnit:GetUnitId()) end
+                if EntityCategoryContains(categories.AIRSTAGINGPLATFORM, oFocusUnit:GetUnitId()) then
+                    return false
+                end
+            end
+        end
+    end
+    return true
+end
+
+function SelectAvailableGunships()
+    --SmartSelection.smartSelect("AIR GROUNDATTACK")
+    ConExecute('UI_SelectByCategory AIR GROUNDATTACK')
+    local toGunships = GetSelectedUnits()
+    if not(table.empty(toGunships)) then
+        local oCurGunship
+        for iCurGunship = table.getn(toGunships), 1, -1 do
+            if not(IsAirUnitAvailable(toGunships[iCurGunship])) then
+                table.remove(toGunships, iCurGunship)
+            end
+        end
+        SelectUnits(toGunships)
+    end
+end
+
+function SelectAvailableAirAA()
+    SmartSelection.smartSelect("AIR HIGHALTAIR ANTIAIR -BOMBER -EXPERIMENTAL")
+    local toAirAA = GetSelectedUnits()
+    if not(table.empty(toAirAA)) then
+        local oCurAir
+        for iCurAir = table.getn(toAirAA), 1, -1 do
+            if not(IsAirUnitAvailable(toAirAA[iCurAir])) then
+                table.remove(toAirAA, iCurAir)
+            end
+        end
+        SelectUnits(toAirAA)
     end
 end
