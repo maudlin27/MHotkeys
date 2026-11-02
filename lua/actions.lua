@@ -130,8 +130,8 @@ function FilterLowestHealthUnits()
         local oLowestHealthUnit
         local iLowestHealthPercent = iHighHealthThreshold --Dont select units with more than this % of health
         local iCurHealthPercent
-        local iLowHealthThreshold = 0.3
-        local iLowFuelThreshold = 0.15
+        local iLowHealthThreshold = 0.35
+        local iLowFuelThreshold = 0.2
         local toLowHealthUnits = {}
         for iUnit, oUnit in toSelection do
             iCurHealthPercent = oUnit:GetHealth() / oUnit:GetMaxHealth()
